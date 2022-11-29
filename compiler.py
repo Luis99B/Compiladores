@@ -16,19 +16,19 @@ sys.path.insert(0, "..")
 
 # Reserved words
 reserved = {
-    "int": "INTDCL",
-    "float": "FLOATDCL",
-    "boolean": "BOOLDCL",
-    "print": "PRINT",
-    "true": "BOOLVAL",
-    "false": "BOOLVAL",
-    "if": "IF",
-    "elif": "ELIF",
-    "else": "ELSE",
-    "while": "WHILE",
-    "for": "FOR",
-    "and": "AND",
-    "or": "OR"
+    'int': 'INTDCL',
+    'float': 'FLOATDCL',
+    'boolean': 'BOOLDCL',
+    'print': 'PRINT',
+    'true': 'BOOLVAL',
+    'false': 'BOOLVAL',
+    'if': 'IF',
+    'elif': 'ELIF',
+    'else': 'ELSE',
+    'while': 'WHILE',
+    'for': 'FOR',
+    'and': 'AND',
+    'or': 'OR'
 }
 
 # All valid tokens (terminal)
@@ -128,7 +128,7 @@ def p_statement_declare_int(p: YaccProduction):
                 | INTDCL NAME "=" expression ";" '''
     symbolsTable['table'][p[2]] = {'type': 'INT', 'value': 0}
     n = Node()
-    n.type = 'INT_DLC'
+    n.type = 'INT_DCL'
     n.val = p[2]
     if len(p) == 6:
         symbolsTable['table'][p[2]]['value'] = p[4].val
@@ -141,7 +141,7 @@ def p_statement_declare_float(p: YaccProduction):
                 | FLOATDCL NAME "=" expression ";" '''
     symbolsTable['table'][p[2]] = {'type': 'FLOAT', 'value': 0.0}
     n = Node()
-    n.type = 'FLOAT_DLC'
+    n.type = 'FLOAT_DCL'
     n.val = p[2]
     if len(p) == 6:
         symbolsTable['table'][p[2]]['value'] = p[4].val
@@ -154,7 +154,7 @@ def p_statement_declare_bool(p: YaccProduction):
                 | BOOLDCL NAME "=" boolean_expression ";" '''
     symbolsTable['table'][p[2]] = {'type': 'BOOLEAN', 'value': False}
     n = Node()
-    n.type = 'BOOL_DLC'
+    n.type = 'BOOL_DCL'
     n.val = p[2]
     if len(p) == 6:
         symbolsTable['table'][p[2]]['value'] = p[4].val
@@ -175,7 +175,7 @@ def p_statement_print(p: YaccProduction):
 def p_statement_if(p: YaccProduction):
     '''statement : IF LPAREN boolean_expression RPAREN "{" stmts "}" elifs else '''
     n = Node()
-    n.type = "IF"
+    n.type = 'IF'
     c = Node()
     c.type = 'CONDITION'
     c.childrens.append(p[3])
@@ -207,7 +207,7 @@ def p_elif(p: YaccProduction):
             | empty '''
     if len(p) == 8:
         n = Node()
-        n.type = "ELIF"
+        n.type = 'ELIF'
         c = Node()
         c.type = 'CONDITION'
         c.childrens.append(p[3])
@@ -224,7 +224,7 @@ def p_else(p: YaccProduction):
             | empty '''
     if len(p) == 5:
         n = Node()
-        n.type = "ELSE"
+        n.type = 'ELSE'
         b = Node()
         b.type = 'BLOCK'
         b.childrens.extend(p[3])
@@ -278,24 +278,25 @@ def p_expression_step(p: YaccProduction):
             | NAME TIMES "=" expression
             | NAME DIVIDE "=" expression
             | NAME PLUS PLUS
-            | NAME MINUS MINUS
-            | PLUS PLUS NAME
-            | MINUS MINUS NAME'''
+            | NAME MINUS MINUS'''
     n = Node()
-    s = Node()
-    s.type = 'ID'
-    n.childrens.append(s)
+    n.type = 'ASSIGN'
+    n1 = Node()
+    n1.type = 'ID'
+    n1.val = p[1]
+    op = Node()
+    op.type = 'OP'
+    op.val = p[2]
+    op.childrens.append(n1)
     if len(p) == 4:
-        if p[1] in ['+', '-']:
-            n.type = p[1] * 2
-            s.val = p[3]
-        else:
-            n.type = p[2] * 2
-            s.val = p[1]
-    elif len(p) == 5:
-        n.type = p[2] + p[3]
-        s.val = p[1]
-        n.childrens.append(p[4])
+        inc = Node()
+        inc.type = 'INUMBER'
+        inc.val = 1
+        op.childrens.append(inc)
+    else:
+        op.childrens.append(p[4])
+    n.childrens.append(n1)
+    n.childrens.append(op)
     p[0] = n
 
 
@@ -473,6 +474,69 @@ precedence = (
     ('right', 'UMINUS'),  # Unary minus operator + -2
 )
 
+varCounter = 0
+labelCounter = 0
+
+
+# TAC
+def genTAC(node: Node):
+    global varCounter
+    global labelCounter
+    # print(node)
+    if node.type in ['ID', 'INUMBER', 'FNUMBER', 'BOOLVAL']:
+        return f"{node.val}"
+    elif node.type == 'CONDITION':
+        return f"{genTAC(node.childrens[0])}"
+    elif node.type == 'PRINT':
+        print(f"PRINT {genTAC(node.childrens[0])}")
+    elif node.type == 'ASSIGN':
+        print(f"{genTAC(node.childrens[0])} := {genTAC(node.childrens[1])}")
+    elif node.type in ['INT_DCL', 'FLOAT_DCL', 'BOOL_DCL'] and node.childrens:
+        print(f"{node.val} := {genTAC(node.childrens[0])}")
+    elif node.type in ['OP', 'COMPARISON', 'LOGICAL_OP']:
+        tmpVar = f"t{varCounter}"
+        varCounter = varCounter + 1
+        print(f"{tmpVar} := {genTAC(node.childrens[0])} {node.val} {genTAC(node.childrens[1])}")
+        return tmpVar
+    elif node.type == 'STEP':
+        var = node.childrens[0].childrens[0]
+        op = node.childrens[0].childrens[1]
+        print(f"{var.val} = {genTAC(op.childrens[0])} {op.val} {genTAC(op.childrens[1])}")
+    elif node.type == 'IF':
+        tmpVar = f"t{varCounter}"
+        varCounter = varCounter + 1
+        print(f"{tmpVar} := !{genTAC(node.childrens[0])}")  # condition
+        tmpLabel = f"L{labelCounter}"
+        labelCounter = labelCounter + 1
+        print(f"goToLabelIf {tmpVar} {tmpLabel}")
+        for i in range(1, len(node.childrens)):  # block elif else
+            genTAC(node.childrens[i])
+        print(tmpLabel)
+    elif node.type in ['ELIF', 'WHILE']:
+        tmpVar = f"t{varCounter}"
+        varCounter = varCounter + 1
+        print(f"{tmpVar} := !{genTAC(node.childrens[0])}")  # condition
+        tmpLabel = f"L{labelCounter}"
+        labelCounter = labelCounter + 1
+        print(f"goToLabelIf {tmpVar} {tmpLabel}")
+        genTAC(node.childrens[1])  # block
+        print(tmpLabel)
+    elif node.type == 'FOR':
+        tmpVar = f"t{varCounter}"
+        varCounter = varCounter + 1
+        genTAC(node.childrens[0])  # variable
+        print(f"{tmpVar} := !{genTAC(node.childrens[1])}")  # condition
+        tmpLabel = f"L{labelCounter}"
+        labelCounter = labelCounter + 1
+        print(f"goToLabelIf {tmpVar} {tmpLabel}")
+        genTAC(node.childrens[3])  # block
+        genTAC(node.childrens[2])  # step
+        print(tmpLabel)
+    else:
+        for child in node.childrens:
+            genTAC(child)
+
+
 if __name__ == '__main__':
     f = open("input.txt")
     content = f.read()
@@ -480,3 +544,5 @@ if __name__ == '__main__':
     if abstractTree:
         abstractTree.printTree()
     print(symbolsTable['table'])
+    print("\ntac:\n")
+    genTAC(abstractTree)
