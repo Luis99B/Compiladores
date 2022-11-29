@@ -1,0 +1,24 @@
+int a;
+float b = 2.2;
+boolean abc = true;
+if (abc) {
+a = 3;
+print a;
+} elif (b < 2.5) {
+b = b + 0.8;
+print b;
+} elif (b < 2 and b > 1) {
+print a;
+} else {
+a = 2;
+}
+a = 10;
+while (abc) {
+a = a - 1;
+if (a < 0) {
+abc = false;
+}
+}
+for (int i = 0; i < 10; i++){
+print i;
+}

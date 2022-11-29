@@ -29,29 +29,29 @@ Para proyecto final de esta materia crearemos un pequeño compilador, para un le
 ### Operaciones de bloques
 
 - ( )
-- {}
+- { }
 
-### Un sistema de tipos
+## Un sistema de tipos
 
 - Int
 - Float
-- Bolean
+- Boolean
 
 ## Operaciones permitidas entre el sistema de tipos
 
 |         | int                      | float                    | boolean         |
 |---------|--------------------------|--------------------------|-----------------|
-| int     | Aritmeticas, comparacion | Aritmeticas, comparacion |                 |
-| float   | Aritmeticas, comparacion | Aritmeticas, comparacion |                 |
+| int     | Aritmeticas, comparacion | Aritmeticas, comparacion | ----            |
+| float   | Aritmeticas, comparacion | Aritmeticas, comparacion | ----            |
 | boolean | ----                     | ----                     | and, or, ==, != |
 
 ## Flujos de control existentes, deberán seguir una estructura similar al lenguaje C, por simplicidad todo deberán llevar llaves
 
-- If , else, elif
-- while () {}
-- for (;;) {}
+- If, else, elif
+- while ( ) { }
+- for ( ; ; ) { }
 
-Para marcar el final de una sentencia se utilizara ";"
+Para marcar el final de una sentencia se utilizara "**;**"
 
 Es permitido el declarar y asignar una variable en la misma linea
 
