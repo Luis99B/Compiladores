@@ -1,5 +1,7 @@
 """
     Nodo Class
+    Luis Bodart A01635000
+    https://github.com/Luis99B/Compiladores
 """
 
 

@@ -1,6 +1,7 @@
 """
-    Luis Bodart A01635000
     Compiler using Lex-Yacc
+    Luis Bodart A01635000
+    https://github.com/Luis99B/Compiladores
 """
 
 import sys
@@ -342,19 +343,27 @@ def p_expression_binop(p: YaccProduction):
 
 # Int
 def p_expression_inumber(p: YaccProduction):
-    "expression : INUMBER"
+    '''expression : INUMBER
+                | MINUS INUMBER '''
     n = Node()
     n.type = 'INUMBER'
-    n.val = int(p[1])
+    if len(p) == 3:
+        n.val = int(f"{p[1]}{p[2]}")
+    else:
+        n.val = int(p[1])
     p[0] = n
 
 
 # Float
 def p_expression_fnumber(p: YaccProduction):
-    "expression : FNUMBER"
+    '''expression : FNUMBER
+                | MINUS FNUMBER'''
     n = Node()
     n.type = 'FNUMBER'
-    n.val = float(p[1])
+    if len(p) == 3:
+        n.val = float(f"{p[1]}{p[2]}")
+    else:
+        n.val = float(p[1])
     p[0] = n
 
 
