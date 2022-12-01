@@ -3,7 +3,7 @@
     Luis Bodart A01635000
     https://github.com/Luis99B/Compiladores
 """
-
+import math
 import sys
 
 import ply.lex as lex
@@ -132,7 +132,37 @@ def p_statement_declare_int(p: YaccProduction):
     n.type = 'INT_DCL'
     n.val = p[2]
     if len(p) == 6:
-        symbolsTable['table'][p[2]]['value'] = p[4].val
+        if p[4].type == 'OP':
+            n1 = symbolsTable['table'].get(p[4].childrens[0].val, p[4].childrens[0].val)
+            n2 = symbolsTable['table'].get(p[4].childrens[1].val, p[4].childrens[1].val)
+            res = 0
+            error = None
+            try:
+                if isinstance(n1, str):
+                    error = n1
+                    raise KeyError
+                if isinstance(n2, str):
+                    error = n2
+                    raise KeyError
+                n1 = n1.get('value') if isinstance(n1, dict) else n1
+                n2 = n2.get('value') if isinstance(n2, dict) else n2
+                if p[4].val == '+':
+                    res = n1 + n2
+                if p[4].val == '-':
+                    res = n1 - n2
+                if p[4].val == '*':
+                    res = n1 * n2
+                if p[4].val == '/':
+                    res = n1 / n2
+                if p[4].val == '^':
+                    res = math.pow(n1, n2)
+            except KeyError:
+                print(f"ERROR: variable '{error}' undefined")
+            except ZeroDivisionError:
+                print(f"ERROR: division by 0")
+            symbolsTable['table'][p[2]]['value'] = int(res)
+        else:
+            symbolsTable['table'][p[2]]['value'] = p[4].val
         n.childrens.append(p[4])
     p[0] = n
 
@@ -145,7 +175,37 @@ def p_statement_declare_float(p: YaccProduction):
     n.type = 'FLOAT_DCL'
     n.val = p[2]
     if len(p) == 6:
-        symbolsTable['table'][p[2]]['value'] = p[4].val
+        if p[4].type == 'OP':
+            n1 = symbolsTable['table'].get(p[4].childrens[0].val, p[4].childrens[0].val)
+            n2 = symbolsTable['table'].get(p[4].childrens[1].val, p[4].childrens[1].val)
+            res = 0.0
+            error = None
+            try:
+                if isinstance(n1, str):
+                    error = n1
+                    raise KeyError
+                if isinstance(n2, str):
+                    error = n2
+                    raise KeyError
+                n1 = n1.get('value') if isinstance(n1, dict) else n1
+                n2 = n2.get('value') if isinstance(n2, dict) else n2
+                if p[4].val == '+':
+                    res = n1 + n2
+                if p[4].val == '-':
+                    res = n1 - n2
+                if p[4].val == '*':
+                    res = n1 * n2
+                if p[4].val == '/':
+                    res = n1 / n2
+                if p[4].val == '^':
+                    res = math.pow(n1, n2)
+            except KeyError:
+                print(f"ERROR: variable '{error}' undefined")
+            except ZeroDivisionError:
+                print(f"ERROR: division by 0")
+            symbolsTable['table'][p[2]]['value'] = res
+        else:
+            symbolsTable['table'][p[2]]['value'] = p[4].val
         n.childrens.append(p[4])
     p[0] = n
 
@@ -158,7 +218,37 @@ def p_statement_declare_bool(p: YaccProduction):
     n.type = 'BOOL_DCL'
     n.val = p[2]
     if len(p) == 6:
-        symbolsTable['table'][p[2]]['value'] = p[4].val
+        if p[4].type == 'COMPARISON':
+            n1 = symbolsTable['table'].get(p[4].childrens[0].val, p[4].childrens[0].val)
+            n2 = symbolsTable['table'].get(p[4].childrens[1].val, p[4].childrens[1].val)
+            res = False
+            error = None
+            try:
+                if isinstance(n1, str):
+                    error = n1
+                    raise KeyError
+                if isinstance(n2, str):
+                    error = n2
+                    raise KeyError
+                n1 = n1.get('value') if isinstance(n1, dict) else n1
+                n2 = n2.get('value') if isinstance(n2, dict) else n2
+                if p[4].val == '==':
+                    res = n1 == n2
+                if p[4].val == '!=':
+                    res = n1 != n2
+                if p[4].val == '<':
+                    res = n1 < n2
+                if p[4].val == '<=':
+                    res = n1 <= n2
+                if p[4].val == '>':
+                    res = n1 > n2
+                if p[4].val == '>=':
+                    res = n1 >= n2
+            except KeyError:
+                print(f"ERROR: variable '{error}' undefined")
+            symbolsTable['table'][p[2]]['value'] = res
+        else:
+            symbolsTable['table'][p[2]]['value'] = p[4].val
         n.childrens.append(p[4])
     p[0] = n
 
@@ -489,6 +579,13 @@ labelCounter = 0
 
 # TAC
 def genTAC(node: Node):
+    """
+    It takes a node and prints the TAC code for that node
+
+    :param node: The node to be processed
+    :type node: Node
+    :return: The TAC code
+    """
     global varCounter
     global labelCounter
     # print(node)
@@ -552,6 +649,6 @@ if __name__ == '__main__':
     yacc.parse(content)
     if abstractTree:
         abstractTree.printTree()
-    print(symbolsTable['table'])
-    print("\ntac:\n")
-    genTAC(abstractTree)
+        print(symbolsTable['table'])
+        print("\ntac:\n")
+        genTAC(abstractTree)
