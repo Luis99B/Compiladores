@@ -3,6 +3,7 @@
     Luis Bodart A01635000
     https://github.com/Luis99B/Compiladores
 """
+
 import math
 import sys
 
@@ -501,7 +502,15 @@ symbolsTable = {
 }
 
 
+# Evaluate expressions
 def evaluate(node: Node):
+    """
+    It evaluates the node and returns the result
+
+    :param node: the node to evaluate
+    :type node: Node
+    :return: The result of the expression
+    """
     # print(node)
     if isinstance(node, int) or isinstance(node, float) or isinstance(node, bool):
         return node
