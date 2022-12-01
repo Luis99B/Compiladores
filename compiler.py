@@ -101,9 +101,20 @@ def t_error(t: LexToken):
 # Lexer
 lexer = lex.lex()
 
-
 # YACC #
 # Parsing rules
+
+precedence = (
+    ('left', 'AND', 'OR'),
+    ('left', 'EQ', 'NE'),
+    ('nonassoc', 'LT', 'LE', 'GT', 'GE'),  # Nonassociative operators
+    ('left', 'PLUS', 'MINUS'),
+    ('left', 'TIMES', 'DIVIDE'),
+    ('left', 'POW'),
+    ('right', 'UMINUS'),  # Unary minus operator + -2
+)
+
+
 # Program (root)
 def p_prog(p: YaccProduction):
     'prog : stmts'
@@ -133,36 +144,13 @@ def p_statement_declare_int(p: YaccProduction):
     n.val = p[2]
     if len(p) == 6:
         if p[4].type == 'OP':
-            n1 = symbolsTable['table'].get(p[4].childrens[0].val, p[4].childrens[0].val)
-            n2 = symbolsTable['table'].get(p[4].childrens[1].val, p[4].childrens[1].val)
-            res = 0
-            error = None
-            try:
-                if isinstance(n1, str):
-                    error = n1
-                    raise KeyError
-                if isinstance(n2, str):
-                    error = n2
-                    raise KeyError
-                n1 = n1.get('value') if isinstance(n1, dict) else n1
-                n2 = n2.get('value') if isinstance(n2, dict) else n2
-                if p[4].val == '+':
-                    res = n1 + n2
-                if p[4].val == '-':
-                    res = n1 - n2
-                if p[4].val == '*':
-                    res = n1 * n2
-                if p[4].val == '/':
-                    res = n1 / n2
-                if p[4].val == '^':
-                    res = math.pow(n1, n2)
-            except KeyError:
-                print(f"ERROR: variable '{error}' undefined")
-            except ZeroDivisionError:
-                print(f"ERROR: division by 0")
-            symbolsTable['table'][p[2]]['value'] = int(res)
+            res = evaluate(p[4])
+            if res == math.inf or res == -math.inf:
+                symbolsTable['table'][p[2]]['value'] = math.inf
+            else:
+                symbolsTable['table'][p[2]]['value'] = int(res)
         else:
-            symbolsTable['table'][p[2]]['value'] = p[4].val
+            symbolsTable['table'][p[2]]['value'] = int(p[4].val)
         n.childrens.append(p[4])
     p[0] = n
 
@@ -176,36 +164,13 @@ def p_statement_declare_float(p: YaccProduction):
     n.val = p[2]
     if len(p) == 6:
         if p[4].type == 'OP':
-            n1 = symbolsTable['table'].get(p[4].childrens[0].val, p[4].childrens[0].val)
-            n2 = symbolsTable['table'].get(p[4].childrens[1].val, p[4].childrens[1].val)
-            res = 0.0
-            error = None
-            try:
-                if isinstance(n1, str):
-                    error = n1
-                    raise KeyError
-                if isinstance(n2, str):
-                    error = n2
-                    raise KeyError
-                n1 = n1.get('value') if isinstance(n1, dict) else n1
-                n2 = n2.get('value') if isinstance(n2, dict) else n2
-                if p[4].val == '+':
-                    res = n1 + n2
-                if p[4].val == '-':
-                    res = n1 - n2
-                if p[4].val == '*':
-                    res = n1 * n2
-                if p[4].val == '/':
-                    res = n1 / n2
-                if p[4].val == '^':
-                    res = math.pow(n1, n2)
-            except KeyError:
-                print(f"ERROR: variable '{error}' undefined")
-            except ZeroDivisionError:
-                print(f"ERROR: division by 0")
-            symbolsTable['table'][p[2]]['value'] = res
+            res = evaluate(p[4])
+            if res == math.inf or res == -math.inf:
+                symbolsTable['table'][p[2]]['value'] = math.inf
+            else:
+                symbolsTable['table'][p[2]]['value'] = float(res)
         else:
-            symbolsTable['table'][p[2]]['value'] = p[4].val
+            symbolsTable['table'][p[2]]['value'] = float(p[4].val)
         n.childrens.append(p[4])
     p[0] = n
 
@@ -218,37 +183,11 @@ def p_statement_declare_bool(p: YaccProduction):
     n.type = 'BOOL_DCL'
     n.val = p[2]
     if len(p) == 6:
-        if p[4].type == 'COMPARISON':
-            n1 = symbolsTable['table'].get(p[4].childrens[0].val, p[4].childrens[0].val)
-            n2 = symbolsTable['table'].get(p[4].childrens[1].val, p[4].childrens[1].val)
-            res = False
-            error = None
-            try:
-                if isinstance(n1, str):
-                    error = n1
-                    raise KeyError
-                if isinstance(n2, str):
-                    error = n2
-                    raise KeyError
-                n1 = n1.get('value') if isinstance(n1, dict) else n1
-                n2 = n2.get('value') if isinstance(n2, dict) else n2
-                if p[4].val == '==':
-                    res = n1 == n2
-                if p[4].val == '!=':
-                    res = n1 != n2
-                if p[4].val == '<':
-                    res = n1 < n2
-                if p[4].val == '<=':
-                    res = n1 <= n2
-                if p[4].val == '>':
-                    res = n1 > n2
-                if p[4].val == '>=':
-                    res = n1 >= n2
-            except KeyError:
-                print(f"ERROR: variable '{error}' undefined")
-            symbolsTable['table'][p[2]]['value'] = res
+        if p[4].type in ['COMPARISON', 'LOGICAL_OP']:
+            res = evaluate(p[4])
+            symbolsTable['table'][p[2]]['value'] = bool(res)
         else:
-            symbolsTable['table'][p[2]]['value'] = p[4].val
+            symbolsTable['table'][p[2]]['value'] = bool(p[4].val)
         n.childrens.append(p[4])
     p[0] = n
 
@@ -416,6 +355,12 @@ def p_expression_group(p: YaccProduction):
     p[0] = p[2]
 
 
+def p_expression_uminus(p: YaccProduction):
+    'expression : MINUS expression %prec UMINUS'
+    p[2].val = -p[2].val
+    p[0] = p[2]
+
+
 # Operations
 def p_expression_binop(p: YaccProduction):
     '''expression : expression PLUS expression
@@ -433,27 +378,19 @@ def p_expression_binop(p: YaccProduction):
 
 # Int
 def p_expression_inumber(p: YaccProduction):
-    '''expression : INUMBER
-                | MINUS INUMBER '''
+    'expression : INUMBER'
     n = Node()
     n.type = 'INUMBER'
-    if len(p) == 3:
-        n.val = int(f"{p[1]}{p[2]}")
-    else:
-        n.val = int(p[1])
+    n.val = int(p[1])
     p[0] = n
 
 
 # Float
 def p_expression_fnumber(p: YaccProduction):
-    '''expression : FNUMBER
-                | MINUS FNUMBER'''
+    'expression : FNUMBER'
     n = Node()
     n.type = 'FNUMBER'
-    if len(p) == 3:
-        n.val = float(f"{p[1]}{p[2]}")
-    else:
-        n.val = float(p[1])
+    n.val = float(p[1])
     p[0] = n
 
 
@@ -563,15 +500,64 @@ symbolsTable = {
     "parent": None
 }
 
-precedence = (
-    ('left', 'AND', 'OR'),
-    ('left', 'EQ', 'NE'),
-    ('nonassoc', 'LT', 'LE', 'GT', 'GE'),  # Nonassociative operators
-    ('left', 'PLUS', 'MINUS'),
-    ('left', 'TIMES', 'DIVIDE'),
-    ('left', 'POW'),
-    ('right', 'UMINUS'),  # Unary minus operator + -2
-)
+
+def evaluate(node: Node):
+    # print(node)
+    if isinstance(node, int) or isinstance(node, float) or isinstance(node, bool):
+        return node
+    elif isinstance(node, dict):
+        return node['value']
+    elif isinstance(node, str):
+        print(f"ERROR: undefined variable {node}")
+        return None
+    elif node.type in ['ID', 'INUMBER', 'FNUMBER', 'BOOLVAl']:
+        return evaluate(symbolsTable['table'].get(node.val, node.val))
+    elif node.type == 'OP':
+        n1 = symbolsTable['table'].get(node.childrens[0].val, node.childrens[0])
+        n2 = symbolsTable['table'].get(node.childrens[1].val, node.childrens[1])
+        res = 0
+        try:
+            if node.val == '+':
+                res = evaluate(n1) + evaluate(n2)
+            elif node.val == '-':
+                res = evaluate(n1) - evaluate(n2)
+            elif node.val == '*':
+                res = evaluate(n1) * evaluate(n2)
+            elif node.val == '/':
+                res = evaluate(n1) / evaluate(n2)
+            elif node.val == '^':
+                res = math.pow(evaluate(n1), evaluate(n2))
+        except ZeroDivisionError:
+            print(f"ERROR: division by 0")
+            return math.inf
+        except TypeError:
+            return 0
+        return res
+    elif node.type in ['COMPARISON', 'LOGICAL_OP']:
+        n1 = symbolsTable['table'].get(node.childrens[0].val, node.childrens[0])
+        n2 = symbolsTable['table'].get(node.childrens[1].val, node.childrens[1])
+        res = False
+        try:
+            if node.val == '==':
+                res = evaluate(n1) == evaluate(n2)
+            elif node.val == '!=':
+                res = evaluate(n1) != evaluate(n2)
+            elif node.val == '<':
+                res = evaluate(n1) < evaluate(n2)
+            elif node.val == '<=':
+                res = evaluate(n1) <= evaluate(n2)
+            elif node.val == '>':
+                res = evaluate(n1) > evaluate(n2)
+            elif node.val == '>=':
+                res = evaluate(n1) >= evaluate(n2)
+            elif node.val == 'and':
+                res = evaluate(n1) and evaluate(n2)
+            elif node.val == 'or':
+                res = evaluate(n1) or evaluate(n2)
+        except TypeError:
+            return False
+        return res
+
 
 varCounter = 0
 labelCounter = 0

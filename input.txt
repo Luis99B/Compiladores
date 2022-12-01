@@ -1,6 +1,6 @@
-int a = 2^4;
+int a = 2^3+1;
 float e = a / 2.4;
-boolean c = a > 8;
+boolean c = a > 8 and a <= 9;
 if (a < 0) {
 print a + 1;
 } elif (a > 0 and a < 1){
