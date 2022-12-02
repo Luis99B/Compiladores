@@ -144,15 +144,26 @@ def p_statement_declare_int(p: YaccProduction):
     n.type = 'INT_DCL'
     n.val = p[2]
     if len(p) == 6:
-        if p[4].type == 'OP':
+        if p[4].type in ['FNUMBER', 'BOOLVAL']:
+            print(f"ERROR: cannot assign {p[4].type} to INT")
+        elif p[4].type == 'ID':
+            try:
+                symbolsTable['table'][p[2]]['value'] = int(f"{symbolsTable['table'][p[4].val]['value']}")
+                n.childrens.append(p[4])
+            except ValueError:
+                print(f"ERROR: could not convert value of '{p[4].val}' to INT")
+            except KeyError:
+                print(f"ERROR: undeclared variable '{p[4].val}'")
+        elif p[4].type == 'OP':
             res = evaluate(p[4])
             if res == math.inf or res == -math.inf:
                 symbolsTable['table'][p[2]]['value'] = math.inf
             else:
                 symbolsTable['table'][p[2]]['value'] = int(res)
+            n.childrens.append(p[4])
         else:
             symbolsTable['table'][p[2]]['value'] = int(p[4].val)
-        n.childrens.append(p[4])
+            n.childrens.append(p[4])
     p[0] = n
 
 
@@ -164,32 +175,55 @@ def p_statement_declare_float(p: YaccProduction):
     n.type = 'FLOAT_DCL'
     n.val = p[2]
     if len(p) == 6:
-        if p[4].type == 'OP':
+        if p[4].type == 'BOOLVAL':
+            print(f"ERROR: cannot assign {p[4].type} to FLOAT")
+        elif p[4].type == 'ID':
+            try:
+                symbolsTable['table'][p[2]]['value'] = float(f"{symbolsTable['table'][p[4].val]['value']}")
+                n.childrens.append(p[4])
+            except ValueError:
+                print(f"ERROR: could not convert value of '{p[4].val}' to FLOAT")
+            except KeyError:
+                print(f"ERROR: undeclared variable '{p[4].val}'")
+        elif p[4].type == 'OP':
             res = evaluate(p[4])
             if res == math.inf or res == -math.inf:
                 symbolsTable['table'][p[2]]['value'] = math.inf
             else:
                 symbolsTable['table'][p[2]]['value'] = float(res)
+            n.childrens.append(p[4])
         else:
             symbolsTable['table'][p[2]]['value'] = float(p[4].val)
-        n.childrens.append(p[4])
+            n.childrens.append(p[4])
     p[0] = n
 
 
 def p_statement_declare_bool(p: YaccProduction):
     '''statement : BOOLDCL NAME ";"
-                | BOOLDCL NAME "=" boolean_expression ";" '''
+                | BOOLDCL NAME "=" expression ";" '''
     symbolsTable['table'][p[2]] = {'type': 'BOOLEAN', 'value': False}
     n = Node()
     n.type = 'BOOL_DCL'
     n.val = p[2]
     if len(p) == 6:
-        if p[4].type in ['COMPARISON', 'LOGICAL_OP']:
+        if p[4].type in ['INUMBER', 'FNUMBER']:
+            print(f"ERROR: cannot assign {p[4].type} to BOOLEAN")
+        elif p[4].type == 'ID':
+            try:
+                if symbolsTable['table'][p[4].val]['value'] not in ['true', 'false']:
+                    raise ValueError
+                symbolsTable['table'][p[2]]['value'] = (f"{symbolsTable['table'][p[4].val]['value']}" == 'true')
+                n.childrens.append(p[4])
+            except ValueError:
+                print(f"ERROR: could not convert value of '{p[4].val}' to BOOLEAN")
+            except KeyError:
+                print(f"ERROR: undeclared variable '{p[4].val}'")
+        elif p[4].type in ['COMPARISON', 'LOGICAL_OP']:
             res = evaluate(p[4])
-            symbolsTable['table'][p[2]]['value'] = bool(res)
+            symbolsTable['table'][p[2]]['value'] = res
         else:
-            symbolsTable['table'][p[2]]['value'] = bool(p[4].val)
-        n.childrens.append(p[4])
+            symbolsTable['table'][p[2]]['value'] = p[4].val
+            n.childrens.append(p[4])
     p[0] = n
 
 
@@ -606,33 +640,54 @@ def genTAC(node: Node):
     elif node.type == 'IF':
         tmpVar = f"t{varCounter}"
         varCounter = varCounter + 1
-        print(f"{tmpVar} := !{genTAC(node.childrens[0])}")  # condition
+        print(f"{tmpVar} := {genTAC(node.childrens[0])}")  # condition
         tmpLabel = f"L{labelCounter}"
         labelCounter = labelCounter + 1
-        print(f"goToLabelIf {tmpVar} {tmpLabel}")
-        for i in range(1, len(node.childrens)):  # block elif else
+        print(f"{tmpLabel}: enterLabelIf {tmpVar}")
+        genTAC(node.childrens[1])  # block
+        print(f"endOfLabel {tmpLabel}")
+        for i in range(2, len(node.childrens)):  # elif else
             genTAC(node.childrens[i])
-        print(tmpLabel)
-    elif node.type in ['ELIF', 'WHILE']:
+    elif node.type == 'ELIF':
+        tmpVarIf = f"t{varCounter - 1}"
         tmpVar = f"t{varCounter}"
         varCounter = varCounter + 1
-        print(f"{tmpVar} := !{genTAC(node.childrens[0])}")  # condition
+        print(f"{tmpVar} := {genTAC(node.childrens[0])} and !{tmpVarIf}")  # condition
         tmpLabel = f"L{labelCounter}"
         labelCounter = labelCounter + 1
-        print(f"goToLabelIf {tmpVar} {tmpLabel}")
+        print(f"{tmpLabel} : enterLabelIf {tmpVar}")
         genTAC(node.childrens[1])  # block
-        print(tmpLabel)
+        print(f"endOfLabel {tmpLabel}")
+    elif node.type == 'ELSE':
+        tmpVarIf = f"t{varCounter - 1}"
+        tmpVar = f"t{varCounter}"
+        varCounter = varCounter + 1
+        print(f"{tmpVar} := !{tmpVarIf}")
+        tmpLabel = f"L{labelCounter}"
+        labelCounter = labelCounter + 1
+        print(f"{tmpLabel} : enterLabelIf {tmpVar}")
+        genTAC(node.childrens[0])  # block
+        print(f"endOfLabel {tmpLabel}")
+    elif node.type == 'WHILE':
+        tmpVar = f"t{varCounter}"
+        varCounter = varCounter + 1
+        print(f"{tmpVar} := {genTAC(node.childrens[0])}")  # condition
+        tmpLabel = f"L{labelCounter}"
+        labelCounter = labelCounter + 1
+        print(f"{tmpLabel} : enterLabelIf {tmpVar}")
+        genTAC(node.childrens[1])  # block
+        print(f"goToLabel {tmpLabel}")
     elif node.type == 'FOR':
         tmpVar = f"t{varCounter}"
         varCounter = varCounter + 1
         genTAC(node.childrens[0])  # variable
-        print(f"{tmpVar} := !{genTAC(node.childrens[1])}")  # condition
+        print(f"{tmpVar} := {genTAC(node.childrens[1])}")  # condition
         tmpLabel = f"L{labelCounter}"
         labelCounter = labelCounter + 1
-        print(f"goToLabelIf {tmpVar} {tmpLabel}")
+        print(f"{tmpLabel} : enterLabelIf {tmpVar}")
         genTAC(node.childrens[3])  # block
         genTAC(node.childrens[2])  # step
-        print(tmpLabel)
+        print(f"goToLabel {tmpLabel}")
     else:
         for child in node.childrens:
             genTAC(child)

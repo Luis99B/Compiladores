@@ -11,7 +11,7 @@ Rule 5     statement -> INTDCL NAME = expression ;
 Rule 6     statement -> FLOATDCL NAME ;
 Rule 7     statement -> FLOATDCL NAME = expression ;
 Rule 8     statement -> BOOLDCL NAME ;
-Rule 9     statement -> BOOLDCL NAME = boolean_expression ;
+Rule 9     statement -> BOOLDCL NAME = expression ;
 Rule 10    statement -> PRINT expression ;
 Rule 11    statement -> IF LPAREN boolean_expression RPAREN { stmts } elifs else
 Rule 12    elifs -> elif elifs
@@ -94,7 +94,7 @@ error                :
 
 Nonterminals, with rules where they appear
 
-boolean_expression   : 9 11 14 18 19 36 37 38 38 39 39
+boolean_expression   : 11 14 18 19 36 37 38 38 39 39
 boolean_val          : 41
 boolexp              : 48
 comparison           : 40
@@ -102,7 +102,7 @@ elif                 : 12 13
 elifs                : 11 12
 else                 : 11
 empty                : 15 17
-expression           : 5 7 10 20 21 22 23 26 27 28 29 29 30 30 31 31 32 32 33 33 42 42 43 43 44 44 45 45 46 46 47 47
+expression           : 5 7 9 10 20 21 22 23 26 27 28 29 29 30 30 31 31 32 32 33 33 42 42 43 43 44 44 45 45 46 46 47 47
 prog                 : 0
 statement            : 2 3 19
 step                 : 19
@@ -121,7 +121,7 @@ state 0
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -165,7 +165,7 @@ state 3
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -212,7 +212,7 @@ state 6
 state 7
 
     (8) statement -> BOOLDCL . NAME ;
-    (9) statement -> BOOLDCL . NAME = boolean_expression ;
+    (9) statement -> BOOLDCL . NAME = expression ;
 
     NAME            shift and go to state 16
 
@@ -351,7 +351,7 @@ state 15
 state 16
 
     (8) statement -> BOOLDCL NAME . ;
-    (9) statement -> BOOLDCL NAME . = boolean_expression ;
+    (9) statement -> BOOLDCL NAME . = expression ;
 
     ;               shift and go to state 36
     =               shift and go to state 37
@@ -770,7 +770,7 @@ state 30
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -966,7 +966,18 @@ state 36
 
 state 37
 
-    (9) statement -> BOOLDCL NAME = . boolean_expression ;
+    (9) statement -> BOOLDCL NAME = . expression ;
+    (27) expression -> . LPAREN expression RPAREN
+    (28) expression -> . MINUS expression
+    (29) expression -> . expression PLUS expression
+    (30) expression -> . expression MINUS expression
+    (31) expression -> . expression TIMES expression
+    (32) expression -> . expression DIVIDE expression
+    (33) expression -> . expression POW expression
+    (34) expression -> . INUMBER
+    (35) expression -> . FNUMBER
+    (36) expression -> . boolean_expression
+    (51) expression -> . NAME
     (37) boolean_expression -> . LPAREN boolean_expression RPAREN
     (38) boolean_expression -> . boolean_expression AND boolean_expression
     (39) boolean_expression -> . boolean_expression OR boolean_expression
@@ -980,30 +991,19 @@ state 37
     (47) comparison -> . expression GE expression
     (48) boolean_val -> . boolexp
     (49) boolean_val -> . NAME
-    (27) expression -> . LPAREN expression RPAREN
-    (28) expression -> . MINUS expression
-    (29) expression -> . expression PLUS expression
-    (30) expression -> . expression MINUS expression
-    (31) expression -> . expression TIMES expression
-    (32) expression -> . expression DIVIDE expression
-    (33) expression -> . expression POW expression
-    (34) expression -> . INUMBER
-    (35) expression -> . FNUMBER
-    (36) expression -> . boolean_expression
-    (51) expression -> . NAME
     (50) boolexp -> . BOOLVAL
 
-    LPAREN          shift and go to state 55
-    NAME            shift and go to state 58
+    LPAREN          shift and go to state 18
     MINUS           shift and go to state 19
     INUMBER         shift and go to state 20
     FNUMBER         shift and go to state 21
+    NAME            shift and go to state 23
     BOOLVAL         shift and go to state 27
 
-    boolean_expression             shift and go to state 64
+    expression                     shift and go to state 64
+    boolean_expression             shift and go to state 22
     comparison                     shift and go to state 24
     boolean_val                    shift and go to state 25
-    expression                     shift and go to state 57
     boolexp                        shift and go to state 26
 
 state 38
@@ -1956,25 +1956,31 @@ state 63
 
 state 64
 
-    (9) statement -> BOOLDCL NAME = boolean_expression . ;
-    (38) boolean_expression -> boolean_expression . AND boolean_expression
-    (39) boolean_expression -> boolean_expression . OR boolean_expression
-    (36) expression -> boolean_expression .
+    (9) statement -> BOOLDCL NAME = expression . ;
+    (29) expression -> expression . PLUS expression
+    (30) expression -> expression . MINUS expression
+    (31) expression -> expression . TIMES expression
+    (32) expression -> expression . DIVIDE expression
+    (33) expression -> expression . POW expression
+    (42) comparison -> expression . EQ expression
+    (43) comparison -> expression . NE expression
+    (44) comparison -> expression . LT expression
+    (45) comparison -> expression . LE expression
+    (46) comparison -> expression . GT expression
+    (47) comparison -> expression . GE expression
 
     ;               shift and go to state 86
-    AND             shift and go to state 53
-    OR              shift and go to state 54
-    EQ              reduce using rule 36 (expression -> boolean_expression .)
-    NE              reduce using rule 36 (expression -> boolean_expression .)
-    LT              reduce using rule 36 (expression -> boolean_expression .)
-    LE              reduce using rule 36 (expression -> boolean_expression .)
-    GT              reduce using rule 36 (expression -> boolean_expression .)
-    GE              reduce using rule 36 (expression -> boolean_expression .)
-    PLUS            reduce using rule 36 (expression -> boolean_expression .)
-    MINUS           reduce using rule 36 (expression -> boolean_expression .)
-    TIMES           reduce using rule 36 (expression -> boolean_expression .)
-    DIVIDE          reduce using rule 36 (expression -> boolean_expression .)
-    POW             reduce using rule 36 (expression -> boolean_expression .)
+    PLUS            shift and go to state 39
+    MINUS           shift and go to state 40
+    TIMES           shift and go to state 41
+    DIVIDE          shift and go to state 42
+    POW             shift and go to state 43
+    EQ              shift and go to state 44
+    NE              shift and go to state 45
+    LT              shift and go to state 46
+    LE              shift and go to state 47
+    GT              shift and go to state 48
+    GE              shift and go to state 49
 
 
 state 65
@@ -2708,23 +2714,23 @@ state 85
 
 state 86
 
-    (9) statement -> BOOLDCL NAME = boolean_expression ; .
+    (9) statement -> BOOLDCL NAME = expression ; .
 
-    INTDCL          reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    FLOATDCL        reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    BOOLDCL         reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    PRINT           reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    IF              reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    WHILE           reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    FOR             reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    NAME            reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    $end            reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    }               reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    LPAREN          reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    MINUS           reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    INUMBER         reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    FNUMBER         reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
-    BOOLVAL         reduce using rule 9 (statement -> BOOLDCL NAME = boolean_expression ; .)
+    INTDCL          reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    FLOATDCL        reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    BOOLDCL         reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    PRINT           reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    IF              reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    WHILE           reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    FOR             reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    NAME            reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    $end            reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    }               reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    LPAREN          reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    MINUS           reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    INUMBER         reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    FNUMBER         reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
+    BOOLVAL         reduce using rule 9 (statement -> BOOLDCL NAME = expression ; .)
 
 
 state 87
@@ -2737,7 +2743,7 @@ state 87
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -2766,7 +2772,7 @@ state 88
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -3063,7 +3069,7 @@ state 105
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -3510,7 +3516,7 @@ state 122
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
@@ -3618,7 +3624,7 @@ state 128
     (6) statement -> . FLOATDCL NAME ;
     (7) statement -> . FLOATDCL NAME = expression ;
     (8) statement -> . BOOLDCL NAME ;
-    (9) statement -> . BOOLDCL NAME = boolean_expression ;
+    (9) statement -> . BOOLDCL NAME = expression ;
     (10) statement -> . PRINT expression ;
     (11) statement -> . IF LPAREN boolean_expression RPAREN { stmts } elifs else
     (18) statement -> . WHILE LPAREN boolean_expression RPAREN { stmts }
